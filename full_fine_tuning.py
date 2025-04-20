@@ -1,6 +1,6 @@
 import os
 import time
-from huggingface_hub import login
+from huggingface_hub import login, HfApi
 from datasets import load_dataset
 from trl import SFTConfig, SFTTrainer
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -19,7 +19,7 @@ chat_template = """{% for msg in messages %}
 special_tokens = {"additional_special_tokens": ["<input>", "</input>", "<pii_removed>", "</pii_removed>"]}
 output_dir = "./full_fine_tuning"
 model_chkpts_dir = os.path.join(output_dir, "model_chkpts")
-model_dir = os.path.join(output_dir, "model")
+hf_repo_name = "gpt2_ft-ai4privacy-open-pii-masking-500k-ai4privacy"
 
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -50,6 +50,12 @@ def apply_template(example):
     ]
     return {"messages": messages}
 
+def save_to_hub(model, tokenizer, repo_name):
+    api = HfApi()
+    api.create_repo(repo_id=repo_name, exist_ok=True)
+    tokenizer.push_to_hub(repo_name)
+    model.push_to_hub(repo_name)
+
 total_ds = load_dataset(dataset_name)
 train_val_ds = total_ds["train"].filter(filter_by_lang)
 train_val_ds = train_val_ds.train_test_split(test_size=30000)
@@ -74,7 +80,7 @@ def generate_completion(messages, max_new_tokens=128):
 
 training_args = SFTConfig(
     output_dir=model_chkpts_dir,
-    max_steps=7500,
+    max_steps=22500,
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
     learning_rate=2e-3,
@@ -85,6 +91,7 @@ training_args = SFTConfig(
     save_only_model=True,
     save_total_limit=1,
     load_best_model_at_end=True,
+    disable_tqdm=True,
 )
 
 trainer = SFTTrainer(
@@ -104,4 +111,4 @@ end = time.time()
 time_taken = (end - start) / 60  # minutes
 print(f"Time taken by training: {time_taken:.2f} minutes")
 
-trainer.save_model(model_dir)
+save_to_hub(model, tokenizer, hf_repo_name)
