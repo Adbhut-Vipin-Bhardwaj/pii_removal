@@ -19,7 +19,7 @@ chat_template = """{% for msg in messages %}
 special_tokens = {"additional_special_tokens": ["<input>", "</input>", "<pii_removed>", "</pii_removed>"]}
 output_dir = "./full_fine_tuning"
 model_chkpts_dir = os.path.join(output_dir, "model_chkpts")
-hf_repo_name = "gpt2_ft-ai4privacy-open-pii-masking-500k-ai4privacy"
+hf_repo_name = "Adbhut/gpt2_ft-ai4privacy-open-pii-masking-500k-ai4privacy"
 
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -51,7 +51,10 @@ def apply_template(example):
     return {"messages": messages}
 
 def save_to_hub(model, tokenizer, repo_name):
-    api = HfApi()
+    api = HfApi(
+        endpoint="https://huggingface.co",
+        token=token,
+    )
     api.create_repo(repo_id=repo_name, exist_ok=True)
     tokenizer.push_to_hub(repo_name)
     model.push_to_hub(repo_name)
