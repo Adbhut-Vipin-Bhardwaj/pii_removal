@@ -1,24 +1,29 @@
 import argparse
-from huggingface_hub import login
+# from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-token = "<huggingface token>"
-login(token)
+# token = "<huggingface token>"
+# login(token)
 
 
-model_name = "openai-community/gpt2"
+model_name = "./full_fine_tuning/model"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 
-def generate_completion(prompt, max_new_tokens=50):
-    tokens = tokenizer(prompt, return_tensors="pt")
-    output = model.generate(
-        **tokens, max_new_tokens=max_new_tokens, pad_token_id=tokenizer.eos_token_id
+def generate_completion(messages, max_new_tokens=128):
+    prompt_text = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True,
     )
-    completion = tokenizer.decode(output[0], skip_special_tokens=True)
+    tokens = tokenizer(prompt_text, return_tensors="pt")
+    output = model.generate(
+        **tokens, max_new_tokens=max_new_tokens,
+        pad_token_id=tokenizer.eos_token_id,
+        eos_token_id=tokenizer.eos_token_id,
+    )
+    completion = tokenizer.decode(output[0], skip_special_tokens=False)
     return completion
 
 
@@ -36,7 +41,12 @@ def main():
         if prompt == "q":
             break
 
-        completion = generate_completion(prompt, max_new_tokens=args.max_new_tokens)
+        completion = generate_completion(
+            [
+                {"role": "input", "content": prompt},
+            ],
+            max_new_tokens=args.max_new_tokens
+        )
         print(f"Completion: {completion}")
 
 
