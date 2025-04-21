@@ -51,6 +51,7 @@ def apply_template(example):
     return {"messages": messages}
 
 def save_to_hub(model, tokenizer, repo_name):
+    login(token)
     api = HfApi(
         endpoint="https://huggingface.co",
         token=token,
