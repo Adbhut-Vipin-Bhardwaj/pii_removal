@@ -1,13 +1,13 @@
 import argparse
-# from huggingface_hub import login
+from huggingface_hub import login
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-# token = "<huggingface token>"
-# login(token)
+token = "<huggingface token>"
+login(token)
 
 
-model_name = "./full_fine_tuning/model"
+model_name = "Adbhut/gpt2_ft-ai4privacy-open-pii-masking-500k-ai4privacy"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
