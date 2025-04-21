@@ -2,7 +2,7 @@ import os
 import time
 from huggingface_hub import login, HfApi
 from datasets import load_dataset
-from trl import SFTConfig, SFTTrainer
+from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
@@ -26,6 +26,9 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 tokenizer.add_special_tokens(special_tokens)
+# Set <input> as the BOS token
+tokenizer.bos_token = "<input>"
+tokenizer.bos_token_id = tokenizer.convert_tokens_to_ids("<input>")
 # Set </pii_removed> as the EOS token
 tokenizer.eos_token = "</pii_removed>"
 tokenizer.eos_token_id = tokenizer.convert_tokens_to_ids("</pii_removed>")
@@ -82,6 +85,10 @@ def generate_completion(messages, max_new_tokens=128):
     completion = tokenizer.decode(output[0], skip_special_tokens=False)
     return completion
 
+collator = DataCollatorForCompletionOnlyLM(
+    response_template="<pii_removed>", tokenizer=tokenizer
+)
+
 training_args = SFTConfig(
     output_dir=model_chkpts_dir,
     max_steps=22500,
@@ -96,6 +103,7 @@ training_args = SFTConfig(
     save_total_limit=1,
     load_best_model_at_end=True,
     disable_tqdm=True,
+    packing=False,
 )
 
 trainer = SFTTrainer(
@@ -104,6 +112,7 @@ trainer = SFTTrainer(
     train_dataset=train_ds,
     eval_dataset=val_ds,
     processing_class=tokenizer,
+    data_collator=collator,
 )
 
 start = time.time()
