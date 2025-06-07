@@ -2,7 +2,7 @@ import os
 import time
 from huggingface_hub import login, HfApi
 from datasets import load_dataset
-from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
+from trl import SFTConfig, SFTTrainer
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
@@ -85,10 +85,6 @@ def generate_completion(messages, max_new_tokens=128):
     completion = tokenizer.decode(output[0], skip_special_tokens=False)
     return completion
 
-collator = DataCollatorForCompletionOnlyLM(
-    response_template="<pii_removed>", tokenizer=tokenizer
-)
-
 training_args = SFTConfig(
     output_dir=model_chkpts_dir,
     max_steps=22500,
@@ -103,7 +99,6 @@ training_args = SFTConfig(
     save_total_limit=1,
     load_best_model_at_end=True,
     disable_tqdm=True,
-    packing=False,
 )
 
 trainer = SFTTrainer(
@@ -112,7 +107,6 @@ trainer = SFTTrainer(
     train_dataset=train_ds,
     eval_dataset=val_ds,
     processing_class=tokenizer,
-    data_collator=collator,
 )
 
 start = time.time()
